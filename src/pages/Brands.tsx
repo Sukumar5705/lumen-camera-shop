@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, ChevronRight, ArrowUpRight, Star, X } from "lucide-react";
+import { Search, ChevronRight, ArrowUpRight, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { TopBar } from "../components/camera/TopBar";
 import { Navbar } from "../components/camera/Navbar";
