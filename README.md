@@ -185,7 +185,7 @@ screenshots/
 src/
 │
 ├── assets/
-│   Static images and icons
+│   Static images and icon
 │
 ├── components/
 │   ├── camera/
