@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Search,
@@ -16,7 +16,7 @@ import { Link } from "react-router-dom";
 import { TopBar } from "../components/camera/TopBar";
 import { Navbar } from "../components/camera/Navbar";
 import { Footer } from "../components/camera/Footer";
-import { products, CATEGORIES, BRANDS } from "../data/products";
+import { CATEGORIES, BRANDS, type Product } from "../data/products";
 
 const PRODUCTS_PER_PAGE = 12;
 
@@ -43,6 +43,25 @@ export default function Shop() {
   const [page, setPage] = useState(1);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [wishlist, setWishlist] = useState<number[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/products`);
+        if (!res.ok) throw new Error('Failed to fetch products');
+        const data = await res.json();
+        setProducts(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Unknown error');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProducts();
+  }, []);
 
   const toggleWishlist = (id: number) =>
     setWishlist((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -247,6 +266,32 @@ export default function Shop() {
       )}
     </aside>
   );
+
+  if (loading) {
+    return (
+      <>
+        <TopBar />
+        <Navbar />
+        <div className="flex h-[60vh] items-center justify-center">
+          <p className="text-ink-soft">Loading products...</p>
+        </div>
+        <Footer />
+      </>
+    );
+  }
+
+  if (error) {
+    return (
+      <>
+        <TopBar />
+        <Navbar />
+        <div className="flex h-[60vh] items-center justify-center">
+          <p className="text-red-500">Error: {error}</p>
+        </div>
+        <Footer />
+      </>
+    );
+  }
 
   return (
     <>

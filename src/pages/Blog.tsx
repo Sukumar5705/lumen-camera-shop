@@ -1,11 +1,11 @@
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ArrowRight, ArrowUpRight, ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { Link } from "react-router-dom";
 import { TopBar } from "../components/camera/TopBar";
 import { Navbar } from "../components/camera/Navbar";
 import { Footer } from "../components/camera/Footer";
-import { blogs, BLOG_CATEGORIES, type Blog, type BlogCategory } from "../data/blogs";
+import { BLOG_CATEGORIES, type Blog, type BlogCategory } from "../data/blogs";
 
 const PAGE_SIZE = 6;
 
@@ -299,7 +299,7 @@ const CATEGORY_TILES: { category: BlogCategory; label: string }[] = [
   { category: "Portrait Photography", label: "Portrait" },
 ];
 
-function CategoryTiles({ onSelect }: { onSelect: (category: BlogCategory) => void }) {
+function CategoryTiles({ onSelect, blogs }: { onSelect: (category: BlogCategory) => void, blogs: Blog[] }) {
   return (
     <section className="bg-[#0a0a0a] py-20 text-white md:py-28">
       <div className="container-page">
@@ -315,15 +315,15 @@ function CategoryTiles({ onSelect }: { onSelect: (category: BlogCategory) => voi
             const cover = blogs.find((b) => b.category === tile.category);
             const count = blogs.filter((b) => b.category === tile.category).length;
             return (
-              <motion.button
-                key={tile.category}
-                initial={{ opacity: 0, y: 28 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "-60px" }}
-                transition={{ delay: i * 0.08, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-                onClick={() => onSelect(tile.category)}
-                className="group relative block aspect-[3/4] overflow-hidden text-left"
-              >
+                <motion.button
+                  key={tile.category}
+                  initial={{ opacity: 0, y: 28 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "-60px" }}
+                  transition={{ delay: i * 0.08, duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                  onClick={() => onSelect(tile.category)}
+                  className="group relative block aspect-[3/4] overflow-hidden text-left"
+                >
                 <img
                   src={cover?.coverImage}
                   alt={tile.label}
@@ -541,6 +541,26 @@ export default function Blog() {
   const [page, setPage] = useState(1);
   const journalRef = useRef<HTMLElement>(null);
 
+  const [blogs, setBlogs] = useState<Blog[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchBlogs = async () => {
+      try {
+        const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/blogs`);
+        if (!res.ok) throw new Error('Failed to fetch blogs');
+        const data = await res.json();
+        setBlogs(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Unknown error');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchBlogs();
+  }, []);
+
   const featured = blogs.find((b) => b.featured) ?? blogs[0];
 
   const sorted = useMemo(
@@ -595,6 +615,32 @@ export default function Blog() {
     journalRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
+  if (loading || !featured) {
+    return (
+      <>
+        <TopBar />
+        <Navbar />
+        <div className="flex h-[60vh] items-center justify-center">
+          <p className="text-ink-soft">Loading journal...</p>
+        </div>
+        <Footer />
+      </>
+    );
+  }
+
+  if (error) {
+    return (
+      <>
+        <TopBar />
+        <Navbar />
+        <div className="flex h-[60vh] items-center justify-center">
+          <p className="text-red-500">Error: {error}</p>
+        </div>
+        <Footer />
+      </>
+    );
+  }
+
   return (
     <>
       <TopBar />
@@ -610,7 +656,7 @@ export default function Blog() {
       <AlternatingFeatures posts={featurePosts} />
 
       {/* Section 4 — Category tiles */}
-      <CategoryTiles onSelect={selectCategory} />
+      <CategoryTiles onSelect={selectCategory} blogs={blogs} />
 
       {/* Section 5 — Journal feed */}
       <section ref={journalRef} className="scroll-mt-24 bg-surface py-20 md:py-28">

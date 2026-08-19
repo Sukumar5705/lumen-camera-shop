@@ -1,11 +1,11 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, ChevronRight, ArrowUpRight, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { TopBar } from "../components/camera/TopBar";
 import { Navbar } from "../components/camera/Navbar";
 import { Footer } from "../components/camera/Footer";
-import { brands, type Brand } from "../data/brands";
+import { type Brand } from "../data/brands";
 
 const BRAND_TYPES = [
   "All",
@@ -19,7 +19,39 @@ export default function Brands() {
   const [search, setSearch] = useState("");
   const [activeType, setActiveType] = useState<string>("All");
   const [selected, setSelected] = useState<Brand | null>(null);
+  const [brands, setBrands] = useState<Brand[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    const fetchBrands = async () => {
+      try {
+        const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/brands`);
+        if (!res.ok) throw new Error('Failed to fetch brands');
+        const data = await res.json();
+        setBrands(data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Unknown error');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchBrands();
+  }, []);
+
+  const handleBrandClick = async (brand: Brand) => {
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/brands/${brand.slug}`);
+      if (res.ok) {
+        const fullBrand = await res.json();
+        setSelected(fullBrand);
+      } else {
+        setSelected(brand); // fallback to basic data
+      }
+    } catch (e) {
+      setSelected(brand);
+    }
+  };
   const filtered = useMemo(() => {
     let list = [...brands];
     if (search.trim()) {
@@ -130,7 +162,7 @@ export default function Brands() {
               {filtered.map((brand, i) => (
                 <motion.button
                   key={brand.id}
-                  onClick={() => setSelected(brand)}
+                  onClick={() => handleBrandClick(brand)}
                   initial={{ opacity: 0, y: 24 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05, duration: 0.4 }}
@@ -247,7 +279,7 @@ export default function Brands() {
                   <div>
                     <p className="text-xs font-700 uppercase tracking-[0.18em] text-brand mb-4">Popular Products</p>
                     <div className="grid gap-4 sm:grid-cols-3">
-                      {selected.popularProducts.map((prod) => (
+                      {selected.popularProducts?.map((prod) => (
                         <div key={prod.name} className="group overflow-hidden rounded-2xl border border-black/5 bg-surface p-3">
                           <div className="aspect-square overflow-hidden rounded-xl bg-secondary">
                             <img
@@ -288,7 +320,7 @@ export default function Brands() {
                   <div className="rounded-2xl bg-[#0a0a0a] p-5">
                     <p className="text-xs font-700 uppercase tracking-[0.18em] text-brand mb-4">Featured Technologies</p>
                     <ul className="space-y-2">
-                      {selected.featuredTech.map((tech) => (
+                      {selected.featuredTech?.map((tech) => (
                         <li key={tech} className="flex items-center gap-2.5">
                           <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-brand" />
                           <span className="text-sm text-white/80">{tech}</span>
