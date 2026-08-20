@@ -8,6 +8,8 @@ const NAV = [
   { label: "Shop", href: "/shop", mega: false },
   { label: "Brands", href: "/brands" },
   { label: "Blog", href: "/blog" },
+  { label: "Contact", href: "/contact" },
+  { label: "Login", href: "/login" },
 ];
 
 const MEGA_COLUMNS = [
